@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raffle Selector</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+    }
+
+    select, button {
+      width: 100%;
+      max-width: 400px;
+      padding: 1rem;
+      font-size: 1rem;
+      margin: 1rem auto;
+      display: block;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .ball-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1rem;
+      gap: 1rem;
+    }
+
+    .ball {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: white;
+      font-weight: bold;
+      transition: transform 0.2s ease;
+    }
+
+    .ball:hover {
+      background-color: #007BFF;
+      transform: scale(1.1);
+    }
+
+    .selected {
+      background-color: #28a745 !important;
+    }
+
+    .result {
+      margin-top: 1.5rem;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .pulse-winner {
+      color: #2e7d32; /* festive green or use any color you prefer */
+      text-shadow: 1px 1px 5px #8bc34a;
+      font-size: 1.5em;
+      animation: pulse 1s infinite;
+    }
+
+
+
+    .link {
+      margin-top: 2rem;
+      display: block;
+      font-size: 1rem;
+      color: #007BFF;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .ball {
+        width: 50px;
+        height: 50px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Choose Your Match</h1>
+
+  <h3>Select Your Name</h3>
+  <select id="participantSelect">
+    <option value="" disabled selected>Select participant</option>
+  </select>
+
+  <h3> Choose a Ball</h3>
+  <div class="ball-container" id="winnerBalls"></div>
+
+  <button onclick="confirmMatch()">Confirm Match</button>
+
+  <div class="result" id="resultMessage"></div>
+
+  <!-- <h3>Enter Your Phone Number</h3>
+  <input type="tel" id="phoneNumber" placeholder="Enter your WhatsApp number" value="+27" />
+  <button onclick="sendToWhatsApp()">Send Result to my WhatsApp</button> -->
+
+  <script>
+    const allParticipants = ["Dimpho", "Karabo", "Thelma", "Swazi", "Ayanda", "Lerato", "Kabelo", "Katleho", "Mamello", "MalomeKhulu", "Lethu", "Sarele", "Bokang", "Popo", "AusiMathoto", "RakgadiPuse", "MalomeTsheiso", "MalomePheta", "MalomeLebo", "Tate", "Olerato", "Tshwanelo", "Zandile", "Lindiwe", "Lehakoe", "Rea"];
+    const preferredWinners = [...allParticipants];
+    let participants = [...allParticipants];
+    let winners = [...new Set([...preferredWinners, ...allParticipants])];
+
+    const participantSelect = document.getElementById("participantSelect");
+    const winnerBallsContainer = document.getElementById("winnerBalls");
+    const resultMessage = document.getElementById("resultMessage");
+
+    let selectedParticipant = null;
+    let selectedWinner = null;
+
+    function getHistory() {
+      return JSON.parse(localStorage.getItem("matchHistory") || "[]");
+    }
+
+    function saveHistory(participant, winner) {
+      const history = getHistory();
+      history.push({ participant, winner });
+      localStorage.setItem("matchHistory", JSON.stringify(history));
+    }
+
+    function getPlayedParticipants() {
+      const history = getHistory();
+      return history.map(entry => entry.participant);
+    }
+
+    function getUsedWinners() {
+      const history = getHistory();
+      return history.map(entry => entry.winner);
+    }
+
+    function populateParticipantDropdown() {
+      const played = getPlayedParticipants();
+      const availableParticipants = participants.filter(name => !played.includes(name));
+
+      participantSelect.innerHTML = '<option value="" disabled selected>Your Name</option>';
+      availableParticipants.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        participantSelect.appendChild(option);
+      });
+
+      if (availableParticipants.length === 0) {
+        const option = document.createElement("option");
+        option.textContent = "No participants left";
+        option.disabled = true;
+        participantSelect.appendChild(option);
+        participantSelect.disabled = true;
+      }
+    }
+
+    function populateWinnerBalls(excludeName) {
+      winnerBallsContainer.innerHTML = '';
+
+      const usedWinners = getUsedWinners();
+      const availableWinners = winners.filter(name => name !== excludeName && !usedWinners.includes(name));
+
+      if (availableWinners.length === 0) {
+        resultMessage.textContent = "No winners left to assign.";
+        return;
+      }
+
+      availableWinners.forEach((winner, index) => {
+        const ball = document.createElement("div");
+        ball.className = 'ball';
+        ball.dataset.winner = winner;
+        ball.textContent = (index + 1);
+        ball.style.backgroundColor = getRandomColor();
+        ball.onclick = () => handleBallClick(winner);
+        winnerBallsContainer.appendChild(ball);
+      });
+    }
+
+    function handleBallClick(winner) {
+      selectedWinner = winner;
+      const selectedBall = document.querySelector(`[data-winner='${winner}']`);
+      selectedBall.classList.add("selected");
+
+      resultMessage.innerHTML = `<strong>${selectedParticipant}</strong>, you will buy a Christmas present for <strong class="pulse-winner">${selectedWinner}</strong> !! 🎁✨`;
+
+      saveHistory(selectedParticipant, selectedWinner);
+
+      // Remove from future selections
+      participants = participants.filter(p => p !== selectedParticipant);
+      winners = winners.filter(w => w !== selectedWinner);
+
+      // Reset and disable
+      populateParticipantDropdown();
+      participantSelect.disabled = true;
+      winnerBallsContainer.innerHTML = '';
+    }
+
+    function confirmMatch() {
+      selectedParticipant = participantSelect.value;
+
+      if (!selectedParticipant) {
+        alert("Please select a participant.");
+        return;
+      }
+
+      populateWinnerBalls(selectedParticipant);
+    }
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    // function sendToWhatsApp() {
+    //   // Get the phone number entered by the user (excluding the "+27" prefix)
+    //   const phoneNumber = document.getElementById("phoneNumber").value;
+
+    //   // Check if the phone number starts with "+27"
+    //   if (!phoneNumber.startsWith("+27")) {
+    //     alert("Please enter a valid South African phone number starting with +27.");
+    //     return;
+    //   }
+
+    //   // Format the message
+    //   const message = `Ke tlo rekela ${selectedWinner}!`;
+
+    //   // Encode the message for URL
+    //   const encodedMessage = encodeURIComponent(message);
+
+    //   // Generate the WhatsApp link
+    //   const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+    //   // Open the WhatsApp link in a new tab
+    //   window.open(whatsappLink, '_blank');
+    // }
+
+    
+
+    // Initialize dropdown
+    populateParticipantDropdown();
+
+  </script>
+</body>
+</html>
