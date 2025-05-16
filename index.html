@@ -153,14 +153,36 @@
       winnerBallsContainer.innerHTML = '';
     }
 
-    function confirmMatch() {
+    async function confirmMatch() {
       selectedParticipant = participantSelect.value;
+
       if (!selectedParticipant) {
         alert("Please select a participant.");
         return;
       }
-      populateWinnerBalls(selectedParticipant);
+
+      try {
+        // 🔍 Check Firestore if this participant already exists
+        const matchRef = db.collection("matches");
+        const existingMatch = await matchRef
+          .where("participant", "==", selectedParticipant)
+          .get();
+
+        if (!existingMatch.empty) {
+          // ❌ Participant already has a match — show error and return
+          alert(`❌ Oops! ${selectedParticipant} has already confirmed a match.`);
+          return;
+        }
+
+        // ✅ If not found in history, allow choosing a ball
+        populateWinnerBalls(selectedParticipant);
+
+      } catch (error) {
+        console.error("Error checking match history:", error);
+        alert("⚠️ Something went wrong while checking match history. Please try again.");
+      }
     }
+
 
     function getRandomColor() {
       const letters = '0123456789ABCDEF';
