@@ -122,9 +122,29 @@
 
   <div class="result" id="resultMessage"></div>
 
-  <h3>Enter Your WhatsApp Number</h3>
+  <h3>Enter Your Phone Number</h3>
   <input type="tel" id="phoneNumber" placeholder="Enter your WhatsApp number" value="+27" />
   <button onclick="sendToWhatsApp()">Send Result to my WhatsApp</button>
+
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBT1whJkg15K8yvgZv5FngPEEFO2_asZrc",
+    authDomain: "blindside-a3593.firebaseapp.com",
+    projectId: "blindside-a3593",
+    storageBucket: "blindside-a3593.firebasestorage.app",
+    messagingSenderId: "708376290337",
+    appId: "1:708376290337:web:45ca1ede737df7b2476f60"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
 
   <script>
     const allParticipants = ["AusiMalerato","Dimpho", "Karabo", "Thelma", "Swazi", "Ayanda", "Lerato", "Kabelo", "Katleho", "Mamello", "MalomeKhulu", "Lethu", "Sarele", "Bokang", "Popo", "AusiMathoto", "RakgadiPuse", "MalomeTsheiso", "MalomePheta", "MalomeLebo", "Tate", "Olerato", "Tshwanelo", "Zandile", "Lindiwe", "Lehakoe", "Rea"];
@@ -143,11 +163,21 @@
       return JSON.parse(localStorage.getItem("matchHistory") || "[]");
     }
 
-    function saveHistory(participant, winner) {
-      const history = getHistory();
-      history.push({ participant, winner });
-      localStorage.setItem("matchHistory", JSON.stringify(history));
+    // function saveHistory(participant, winner) {
+    //   const history = getHistory();
+    //   history.push({ participant, winner });
+    //   localStorage.setItem("matchHistory", JSON.stringify(history));
+    // }
+
+    async function saveHistory(participant, winner) {
+      try {
+        await db.collection("matches").add({ participant, winner, timestamp: Date.now() });
+        console.log("Match saved!");
+      } catch (error) {
+        console.error("Error saving match:", error);
+      }
     }
+
 
     function getPlayedParticipants() {
       const history = getHistory();

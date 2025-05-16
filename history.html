@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Match History</title>
@@ -56,34 +57,100 @@
   <button onclick="resetHistory()">Reset History</button>
   <a href="index.html">⬅ Back to Matching</a>
 
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBT1whJkg15K8yvgZv5FngPEEFO2_asZrc",
+    authDomain: "blindside-a3593.firebaseapp.com",
+    projectId: "blindside-a3593",
+    storageBucket: "blindside-a3593.firebasestorage.app",
+    messagingSenderId: "708376290337",
+    appId: "1:708376290337:web:45ca1ede737df7b2476f60"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+
   <script>
     const historyList = document.getElementById("historyList");
 
     // Displaying the history
-    function displayHistory() {
-      const history = JSON.parse(localStorage.getItem("matchHistory") || "[]");
+    // function displayHistory() {
+    //   const history = JSON.parse(localStorage.getItem("matchHistory") || "[]");
 
-      historyList.innerHTML = "";
+    //   historyList.innerHTML = "";
 
-      if (history.length === 0) {
-        historyList.innerHTML = "<li>No matches yet.</li>";
-        return;
-      }
+    //   if (history.length === 0) {
+    //     historyList.innerHTML = "<li>No matches yet.</li>";
+    //     return;
+    //   }
 
-      history.forEach(pair => {
-        const li = document.createElement("li");
-        li.textContent = `${pair.participant} ➝ ${pair.winner}`;
-        historyList.appendChild(li);
-      });
+    //   history.forEach(pair => {
+    //     const li = document.createElement("li");
+    //     li.textContent = `${pair.participant} ➝ ${pair.winner}`;
+    //     historyList.appendChild(li);
+    //   });
+    // }
+
+    async function displayHistory() {
+        historyList.innerHTML = "<li>Loading...</li>";
+        try {
+            const snapshot = await db.collection("matches").orderBy("timestamp", "asc").get();
+            historyList.innerHTML = "";
+
+            if (snapshot.empty) {
+            historyList.innerHTML = "<li>No matches yet.</li>";
+            } else {
+            snapshot.forEach(doc => {
+                const { participant, winner } = doc.data();
+                const li = document.createElement("li");
+                li.textContent = `${participant} ➝ ${winner}`;
+                historyList.appendChild(li);
+            });
+            }
+        } catch (error) {
+            historyList.innerHTML = "<li>Error loading history</li>";
+            console.error(error);
+        }
     }
+
+
+
+
 
     // Reset history function
-    function resetHistory() {
-      if (confirm("Are you sure you want to reset all match history?")) {
-        localStorage.removeItem("matchHistory"); // Clear history from localStorage
-        displayHistory(); // Refresh history list
-      }
+    // function resetHistory() {
+    //   if (confirm("Are you sure you want to reset all match history?")) {
+    //     localStorage.removeItem("matchHistory"); // Clear history from localStorage
+    //     displayHistory(); // Refresh history list
+    //   }
+    // }
+
+    async function resetHistory() {
+        if (!confirm("Are you sure you want to delete all match history?")) return;
+
+        try {
+            const snapshot = await db.collection("matches").get();
+            const batch = db.batch();
+
+            snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+            displayHistory();
+            alert("History cleared.");
+        } catch (error) {
+            console.error("Error resetting history:", error);
+        }
     }
+
 
     // Initialize the history view
     displayHistory();
