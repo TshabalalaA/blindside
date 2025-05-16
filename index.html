@@ -93,6 +93,15 @@
     let selectedParticipant = null;
     let selectedWinner = null;
 
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+
     async function getHistory() {
       const snapshot = await db.collection("matches").get();
       return snapshot.docs.map(doc => doc.data());
@@ -126,10 +135,20 @@
 
     async function populateWinnerBalls(excludeName) {
       winnerBallsContainer.innerHTML = '';
-      const used = await getUsedWinners();
-      const available = winners.filter(name => name !== excludeName && !used.includes(name));
 
-      available.forEach((winner, index) => {
+      const used = await getUsedWinners();
+
+      const availableWinners = winners.filter(name => name !== excludeName && !used.includes(name));
+
+      // ✅ Shuffle the available winners
+      const shuffledWinners = shuffleArray([...availableWinners]);
+
+      if (shuffledWinners.length === 0) {
+        resultMessage.textContent = "No winners left to assign.";
+        return;
+      }
+
+      shuffledWinners.forEach((winner, index) => {
         const ball = document.createElement("div");
         ball.className = 'ball';
         ball.dataset.winner = winner;
@@ -139,6 +158,9 @@
         winnerBallsContainer.appendChild(ball);
       });
     }
+
+
+    
 
     async function handleBallClick(winner) {
       selectedWinner = winner;
