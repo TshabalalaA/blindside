@@ -81,7 +81,7 @@
   <button onclick="sendToWhatsApp()">Send Result to my WhatsApp</button>
 
   <script>
-    const allParticipants = ["AusiMalerato","Dimpho","Karabo","Thelma","Swazi","Ayanda","Lerato","Kabelo","Katleho","Mamello","MalomeKhulu","Lethu","Sarele","Bokang","Popo","AusiMathoto","RakgadiPuse","MalomeTsheiso","MalomePheta","MalomeLebo","Tate","Olerato","Tshwanelo","Zandile","Lindiwe","Lehakoe","Rea","Junior","Naledi"];
+    const allParticipants = ["AusiMalerato","DimphoMoloi","Karabo","Thelma","Swazi","Ayanda","Lerato","Kabelo","Katleho","Mamello","MalomeKhulu","Lethu","Sarele","Bokang","Popo","AusiMathoto","RakgadiPuse","MalomeTsheiso","MalomePheta","MalomeLebo","Tate","Olerato","Tshwanelo","Zandile","Lindiwe","Lehakoe","Rea","Junior","Naledi","Mamorongwe","Dimpho"];
     const preferredWinners = [...allParticipants];
     let participants = [...allParticipants];
     let winners = [...new Set([...preferredWinners, ...allParticipants])];
@@ -100,7 +100,6 @@
       }
       return array;
     }
-
 
     async function getHistory() {
       const snapshot = await db.collection("matches").get();
@@ -159,8 +158,67 @@
       });
     }
 
+    const exclusionGroups = [
+      ["RakgadiPuse", "Mamello", "Lethu", "DimphoMoloi"],
+      ["MalomePheta", "Popo", "Tshwanelo", "Olerato", "Thelma", "Katleho"],
+      ["AusiMathoto", "Swazi", "Ayanda"],
+      ["AusiMalerato", "Kabelo", "Lerato", "Karabo"],
+      ["Junior", "Naledi"],
+      ["MalomeTsheiso", "Sarele", "Rea"],
+      ["Zandile", "Lindiwe", "Lehakoe"],
+      ["MalomeLebo", "Bokang"],
+      ["Tate","MalomeKhulu"],
+      ["Mamorogwe","Dimpho"]
+    ];
 
-    
+    // Helper to get group for a given name
+    function getExclusionGroup(name) {
+      for (const group of exclusionGroups) {
+        if (group.includes(name)) {
+          return group;
+        }
+      }
+      return [];
+    }
+
+
+    async function populateWinnerBalls(excludeName) {
+      winnerBallsContainer.innerHTML = '';
+
+      const used = await getUsedWinners();
+
+
+
+      // Get exclusion group for the selected participant
+      const exclusionGroup = getExclusionGroup(excludeName);
+
+      // Filter available winners
+      let availableWinners = winners.filter(name => name !== excludeName && !used.includes(name));
+
+      // Exclude participants in the same group
+      if (exclusionGroup.length > 0) {
+        availableWinners = availableWinners.filter(name => !exclusionGroup.includes(name));
+      }
+
+      // Shuffle winners
+      const shuffledWinners = shuffleArray([...availableWinners]);
+
+      if (shuffledWinners.length === 0) {
+        resultMessage.textContent = "No eligible matches left.";
+        return;
+      }
+
+      shuffledWinners.forEach((winner, index) => {
+        const ball = document.createElement("div");
+        ball.className = 'ball';
+        ball.dataset.winner = winner;
+        ball.textContent = (index + 1);
+        ball.style.backgroundColor = getRandomColor();
+        ball.onclick = () => handleBallClick(winner);
+        winnerBallsContainer.appendChild(ball);
+      });
+    }
+
 
     async function handleBallClick(winner) {
       selectedWinner = winner;
@@ -204,7 +262,6 @@
         alert("⚠️ Something went wrong while checking match history. Please try again.");
       }
     }
-
 
     function getRandomColor() {
       const letters = '0123456789ABCDEF';
